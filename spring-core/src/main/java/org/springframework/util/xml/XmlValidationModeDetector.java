@@ -81,6 +81,7 @@ public class XmlValidationModeDetector {
 
 
 	/**
+	 * 真正检测验证模式的方法，就是通过读取 xml 文件后，用 BufferReader 读文件，然后找到特定的标识符，从而判断到底是 dtd 还是xsd
 	 * Detect the validation mode for the XML document in the supplied {@link InputStream}.
 	 * Note that the supplied {@link InputStream} is closed by this method before returning.
 	 * @param inputStream the InputStream to parse
@@ -95,6 +96,7 @@ public class XmlValidationModeDetector {
 			String content;
 			while ((content = reader.readLine()) != null) {
 				content = consumeCommentTokens(content);
+				// 通过 if 判断，是否包含 DOCTYPE 标志，包含就表明这个是 DTD，不然就是 XSD
 				if (this.inComment || !StringUtils.hasText(content)) {
 					continue;
 				}
@@ -102,6 +104,8 @@ public class XmlValidationModeDetector {
 					isDtdValidated = true;
 					break;
 				}
+				// hasOpeningTag 方法是判断当前字符是否是 开始字符 ‘<’ ，如果一直没找到 DOCTYPE
+				// 则表明这个不是 DTD 而是 XSD
 				if (hasOpeningTag(content)) {
 					// End of meaningful data...
 					break;

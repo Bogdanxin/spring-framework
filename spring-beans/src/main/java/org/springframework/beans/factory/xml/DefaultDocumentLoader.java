@@ -62,6 +62,10 @@ public class DefaultDocumentLoader implements DocumentLoader {
 
 
 	/**
+	 * 这就是获取 Document 的方法
+	 * 这个方法的套路：
+	 * 创建 DocumentBuilderFactory ，再通过 DocumentBuilderFactory 创建 DocumentBuilder 对象，
+	 * 进而解析 inputSource 来返回 Document 对象。
 	 * Load the {@link Document} at the supplied {@link InputSource} using the standard JAXP-configured
 	 * XML parser.
 	 */

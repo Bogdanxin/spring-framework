@@ -178,6 +178,9 @@ public abstract class BeanUtils {
 	}
 
 	/**
+	 * 创建一个 Bean ，通过反射获取一个类的构造方法，并对构造方法设置为 public
+	 * if (KotlinDetector.isKotlinReflectPresent() && KotlinDetector.isKotlinType(ctor.getDeclaringClass()))
+	 * 这个判断我不知道，应该是直接创建，否则则使用构造方法类传入参数列表进行创建，创建一个 Bean
 	 * Convenience method to instantiate a class using the given constructor.
 	 * <p>Note that this method tries to set the constructor accessible if given a
 	 * non-accessible (that is, non-public) constructor, and supports Kotlin classes

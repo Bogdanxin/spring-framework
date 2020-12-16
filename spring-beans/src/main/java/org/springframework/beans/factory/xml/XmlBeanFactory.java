@@ -75,6 +75,11 @@ public class XmlBeanFactory extends DefaultListableBeanFactory {
 	 * @throws BeansException in case of loading or parsing errors
 	 */
 	public XmlBeanFactory(Resource resource, BeanFactory parentBeanFactory) throws BeansException {
+		/**
+		 * 在 super(parentBeanFactory); 构造方法中，一直向上回溯，
+		 * 就能达到{@link org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory}
+		 * 的构造方法，在这个构造方法中用来忽略给定接口的自动装配功能，用来避免全都自动初始化（目前我是这么理解的）
+		 */
 		super(parentBeanFactory);
 		this.reader.loadBeanDefinitions(resource);
 	}

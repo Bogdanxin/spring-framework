@@ -115,6 +115,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 
 
 	/**
+	 * 这个方法才是真正用于解析了
 	 * Register each bean definition within the given root {@code <beans/>} element.
 	 */
 	@SuppressWarnings("deprecation")  // for Environment.acceptsProfiles(String...)
@@ -125,16 +126,31 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// the new (child) delegate with a reference to the parent for fallback purposes,
 		// then ultimately reset this.delegate back to its original (parent) reference.
 		// this behavior emulates a stack of delegates without actually necessitating one.
+		// =================================================================================
+		// 这两句话用来解决递归的问题：可以看看这个解析： https://my.oschina.net/u/4356296/blog/4263945
+		// 按照我的理解，xml 文件中的 <bean> 是可以进行嵌套的，一个 bean 中是可以有其他 bean 属性的
+		// 那么我们在解析一个具有其他 bean 属性的 bean 时候，免不了要进行**递归**求解，一层一层的直到没有 bean 属性为止
+		// 而这里的 delegate 就是用来代表上一次递归时的 bean ，作为父类 bean
 		BeanDefinitionParserDelegate parent = this.delegate;
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
+		// 这一段是用来处理 profile 属性的，profile 属性可以用来在配置文件中同时创建多个个配置
+		// 分别作用于生产和测试，正是 profile 属性的这个特殊作用，我们才必须在正式解析之前，
+		// 先解析 profile 属性，从而判断究竟使用的是那个。
+
+		// 判断当前 bean 节点是否是默认的命名空间
 		if (this.delegate.isDefaultNamespace(root)) {
+			// 获取当前节点的 profile 属性
 			String profileSpec = root.getAttribute(PROFILE_ATTRIBUTE);
+			// 通过使用逗号或者分号将 bean 标签指定为多个 profile 标签
 			if (StringUtils.hasText(profileSpec)) {
 				String[] specifiedProfiles = StringUtils.tokenizeToStringArray(
 						profileSpec, BeanDefinitionParserDelegate.MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 				// We cannot use Profiles.of(...) since profile expressions are not supported
 				// in XML config. See SPR-12458 for details.
+				// 判断当前 bean 的标签的所有 profile 是否被激活
+				// 其实就是对 specifiedProfiles 数组进行遍历，看其中是否有一个 profile 是指定的 spring.active.profile
+				// 具体还得看链接的解析
 				if (!getReaderContext().getEnvironment().acceptsProfiles(specifiedProfiles)) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Skipped XML bean definition file due to specified profiles [" + profileSpec +
@@ -145,8 +161,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			}
 		}
 
+		// 解析前处理
 		preProcessXml(root);
+		// 真正的解析过程
 		parseBeanDefinitions(root, this.delegate);
+		// 解析后处理 都是留给子类实现的
 		postProcessXml(root);
 
 		this.delegate = parent;
@@ -166,6 +185,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * @param root the DOM root element of the document
 	 */
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+		// 解析是否是默认标签，
 		if (delegate.isDefaultNamespace(root)) {
 			NodeList nl = root.getChildNodes();
 			for (int i = 0; i < nl.getLength(); i++) {
@@ -182,10 +202,16 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			}
 		}
 		else {
+			// 如果是自定义标签，就进行自定义标签的解析
 			delegate.parseCustomElement(root);
 		}
 	}
 
+	/**
+	 * 通过这个方法解析 root 标签中的不同的子标签
+	 * @param ele 当前的节点的子标签 ？
+	 * @param delegate 当前节点 ？ 不确定
+	 */
 	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 			importBeanDefinitionResource(ele);
